@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Korea Trip">
+<title>Korea Trip</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #2e2e2e;
+    --accent: #e8c97e;
+    --accent2: #c4a35a;
+    --text: #f0ece4;
+    --muted: #888;
+    --seoul: #5b9bd5;
+    --busan: #e07b5a;
+    --green: #6abf7b;
+    --red: #e05a5a;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--bg);
+    padding: calc(var(--safe-top) + 14px) 16px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .trip-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--accent);
+  }
+
+  .trip-dates {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* CITY FILTER */
+  .city-filter {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .city-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .city-btn.active-all { background: var(--accent); color: #000; border-color: var(--accent); }
+  .city-btn.active-seoul { background: var(--seoul); color: #fff; border-color: var(--seoul); }
+  .city-btn.active-busan { background: var(--busan); color: #fff; border-color: var(--busan); }
+
+  /* DAY SCROLL */
+  .day-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 0 12px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .day-scroll::-webkit-scrollbar { display: none; }
+
+  .day-pill {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 48px;
+  }
+  .day-pill.active { background: var(--accent); border-color: var(--accent); }
+  .day-pill.active .pill-num { color: #000; }
+  .day-pill.active .pill-dow { color: #000; opacity: 0.6; }
+  .day-pill.active .pill-city-dot { background: #000; opacity: 0.5; }
+  .day-pill.seoul .pill-city-dot { background: var(--seoul); }
+  .day-pill.busan .pill-city-dot { background: var(--busan); }
+  .day-pill.transit .pill-city-dot { background: var(--accent2); }
+
+  .pill-num { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1; }
+  .pill-dow { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .pill-city-dot { width: 5px; height: 5px; border-radius: 50%; margin-top: 4px; }
+
+  /* MAIN CONTENT */
+  .content {
+    padding: 16px 16px calc(var(--safe-bottom) + 80px);
+  }
+
+  /* DAY CARD */
+  .day-header {
+    margin-bottom: 16px;
+  }
+
+  .day-number-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .day-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .day-badge.seoul { background: rgba(91,155,213,0.2); color: var(--seoul); }
+  .day-badge.busan { background: rgba(224,123,90,0.2); color: var(--busan); }
+  .day-badge.transit { background: rgba(232,201,126,0.15); color: var(--accent); }
+
+  .day-meta { font-size: 12px; color: var(--muted); }
+
+  .day-title {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .day-subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ALERTS */
+  .alert {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .alert.tip { background: rgba(106,191,123,0.12); border-left: 3px solid var(--green); color: #c4f0cd; }
+  .alert.warn { background: rgba(224,90,90,0.12); border-left: 3px solid var(--red); color: #f0c4c4; }
+  .alert-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+  /* BOOKINGS */
+  .bookings-section { margin-bottom: 16px; }
+  .bookings-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .booking-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--accent2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    text-decoration: none;
+  }
+  .booking-text { font-size: 13px; color: var(--text); line-height: 1.4; flex: 1; }
+  .booking-btn {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #000;
+    background: var(--accent);
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-left: 10px;
+  }
+
+  /* SECTION LABELS */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 20px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* STOPS */
+  .stop {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 2px;
+    position: relative;
+  }
+
+  .stop-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 44px;
+    flex-shrink: 0;
+  }
+
+  .stop-time {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    margin-top: 14px;
+  }
+
+  .stop-line {
+    width: 1px;
+    flex: 1;
+    background: var(--border);
+    margin-top: 4px;
+    min-height: 24px;
+  }
+
+  .stop-dot {
+    position: absolute;
+    left: 37px;
+    top: 18px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+
+  .stop-body {
+    flex: 1;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .stop-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    margin-bottom: 2px;
+  }
+
+  .stop-type {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.2px;
+  }
+
+  .stop-desc {
+    font-size: 13px;
+    color: #bbb;
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    letter-spacing: 0.2px;
+  }
+  .tag.tip { background: rgba(106,191,123,0.15); color: #8ddb9e; }
+  .tag.warn { background: rgba(224,90,90,0.15); color: #e08888; }
+  .tag.ticket { background: rgba(232,201,126,0.15); color: var(--accent); }
+  .tag.free { background: rgba(91,155,213,0.15); color: #8ab8e0; }
+  .tag.food { background: rgba(180,120,200,0.15); color: #c8a0d8; }
+  .tag.shop { background: rgba(200,160,80,0.15); color: #d4a84c; }
+
+  .map-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    padding: 4px 0;
+    letter-spacing: 0.3px;
+  }
+
+  /* TRANSPORT CONNECTOR */
+  .transport {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 2px;
+    align-items: stretch;
+  }
+  .transport-left {
+    width: 44px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+  }
+  .transport-line { width: 1px; background: var(--border); }
+  .transport-text {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 6px 0 6px 0;
+    font-style: italic;
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  /* EAT CARDS */
+  .eat-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .eat-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .eat-meal-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(232,201,126,0.12);
+    color: var(--accent2);
+    flex-shrink: 0;
+  }
+
+  .eat-name {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 2px;
+  }
+
+  .eat-type {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .eat-desc {
+    font-size: 13px;
+    color: #bbb;
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+
+  .order-box {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-left: 2px solid var(--accent);
+  }
+  .order-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 4px;
+  }
+  .order-text {
+    font-size: 12px;
+    color: #ccc;
+    line-height: 1.5;
+  }
+
+  /* CAFE CARDS */
+  .cafe-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-top: 2px solid rgba(91,155,213,0.4);
+  }
+
+  .cafe-time-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--seoul);
+    margin-bottom: 4px;
+  }
+
+  .cafe-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    margin-bottom: 2px;
+  }
+
+  .cafe-type {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .cafe-desc {
+    font-size: 13px;
+    color: #bbb;
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+
+  .cafe-order {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-left: 2px solid var(--seoul);
+  }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15,15,15,0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding: 8px 16px calc(var(--safe-bottom) + 8px);
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .bottom-nav::-webkit-scrollbar { display: none; }
+
+  .nav-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .nav-dot.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .nav-dot.seoul-city { border-color: rgba(91,155,213,0.4); }
+  .nav-dot.busan-city { border-color: rgba(224,123,90,0.4); }
+
+  /* ANIMATIONS */
+  .day-view { animation: fadeUp 0.25s ease; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="trip-title">🇰🇷 Korea</div>
+    </div>
+    <div class="trip-dates">Mar 25 – Apr 2 · 9 Days</div>
+  </div>
+  <div class="city-filter">
+    <button class="city-btn active-all" onclick="filterCity('all', this)">All</button>
+    <button class="city-btn" onclick="filterCity('seoul', this)">Seoul</button>
+    <button class="city-btn" onclick="filterCity('busan', this)">Busan</button>
+  </div>
+  <div class="day-scroll" id="dayScroll"></div>
+</div>
+
+<div class="content" id="content"></div>
+
+<div class="bottom-nav" id="bottomNav"></div>
+
+<script>
+const DAYS = [{"id": 1, "date": "Mar 25", "dow": "Tue", "city": "Seoul", "title": "Arrival + Myeongdong", "subtitle": "Late arrival day. Land at 17:40 at Terminal 2 — by the time you clear customs and reach Myeongdong it will be around 7:30-8pm. Easy first night.", "alerts": [{"type": "tip", "text": "✈️ Terminal 2 arrival. AREX Express train from T2 to City Hall ~51 min (9,500 won) — runs until late. Buy T-money card and SIM at the arrivals hall before the train."}, {"type": "tip", "text": "🕐 Realistically at your hotel by 7:30-8pm. Skip the tower tonight — save it for another evening. Just eat, walk Myeongdong, and rest."}], "bookings": [], "stops": [{"time": "17:40", "name": "Land at Incheon Terminal 2", "type": "Arrival", "desc": "Clear immigration and customs (~45-60 min). Pick up your SIM card and T-money card at the arrivals hall before heading to the train — booths are right there.", "tags": [{"t": "Buy T-money card here", "c": "tip"}, {"t": "Buy SIM card here", "c": "tip"}, {"t": "KT or SKT booths", "c": "tip"}], "map": "https://maps.google.com/?q=Incheon+Airport+Terminal+2"}, {"transport": "AREX Express from T2 to City Hall — 51 min, 9,500 won. Runs every 30 min."}, {"time": "~19:30", "name": "L'Escape Myeongdong", "type": "Hotel · Check In", "desc": "Check in, drop everything, freshen up. You have made it. The hotel is walking distance from dinner and the Myeongdong street food strip.", "tags": [{"t": "Ask concierge for tips", "c": "tip"}], "map": "https://maps.google.com/?q=L+Escape+Hotel+Myeongdong+Seoul"}, {"time": "~20:00", "name": "Myeongdong Evening Wander", "type": "Street Food + First Impressions", "desc": "Walk the main strip after dinner. Touristy but genuinely fun energy on a first night in Seoul. The neon, the vendors, the smell of tteokbokki — this is your welcome to Korea.", "tags": [{"t": "Open until late", "c": "tip"}, {"t": "2,000-5,000 won snacks", "c": "food"}], "map": "https://maps.google.com/?q=Myeongdong+Street+Food+Seoul"}], "eats": [{"meal": "Dinner", "name": "Tosokchon Samgyetang", "type": "Ginseng Whole Chicken Soup · Gyeongbokgung Area", "desc": "One of the most iconic local restaurants in Seoul, packed with Korean families. A whole young chicken stuffed with glutinous rice, ginseng, garlic, and jujube — slow-cooked in rich broth. They give you a shot of ginseng liquor with it. Closes at 10pm so you have time after a ~8pm arrival.", "order": "Just order samgyetang — that is the whole menu. Add pajeon (scallion pancake) if you are hungry. No spice here, it is a clean healing broth. Season it yourself with the salt provided.", "tags": [{"t": "Chicken", "c": "food"}, {"t": "No reservation — queue moves fast", "c": "tip"}, {"t": "~17,000 won", "c": "food"}, {"t": "Closes 10pm", "c": "warn"}, {"t": "15 min walk from hotel", "c": "tip"}], "map": "https://maps.google.com/?q=Tosokchon+Samgyetang+Seoul"}, {"meal": "Late snack", "name": "Myeongdong Street Food", "type": "Outside Your Hotel", "desc": "After dinner, walk back through the strip and grab something sweet. No pressure — just snack and decompress after a long travel day.", "order": "Hotteok (sweet pancake with brown sugar) or tornado potato. Both under 4,000 won.", "tags": [{"t": "2,000-4,000 won", "c": "food"}, {"t": "Open late", "c": "tip"}], "map": "https://maps.google.com/?q=Myeongdong+Street+Food+Seoul"}], "cafes": [{"time": "Morning (skip — late arrival day)", "name": "Cafe Bora", "type": "Iconic Matcha Cafe · Insadong · 5 min walk", "desc": "Famous for its stunning deep-blue matcha soft serve and modern hanok interior. One of the most photographed cafes in Seoul. Save it for Day 2 morning as a warm-up before the palaces — it opens at 10am and is right on your Jongno route.", "order": "Matcha cone (the blue one — it is their signature) + hojicha or matcha latte to drink. Under 8,000 won.", "map": "https://maps.google.com/?q=Cafe+Bora+Insadong+Seoul"}]}, {"id": 2, "date": "Mar 26", "dow": "Wed", "city": "Seoul", "title": "Jongno — Palace Day", "subtitle": "The historical heart of Seoul. Start with both palaces early, then drift into the hanok alleys in the afternoon.", "alerts": [{"type": "warn", "text": "Changdeokgung Secret Garden: limited slots — book ahead at royal.cha.go.kr. Closes Mondays."}, {"type": "tip", "text": "Gyeongbokgung closes Tuesdays. You are going Wednesday — you are fine."}], "bookings": [{"text": "Secret Garden tour slot — book before your trip", "link": "https://royal.cha.go.kr", "label": "Book"}], "stops": [{"time": "9am", "name": "Gyeongbokgung Palace", "type": "Palace · 1395 · Guard Change at 10am", "desc": "Arrive at opening. Guard-changing ceremony at the main gate at 10am sharp — free to watch. Rent a hanbok (~20,000 won/hr) for free entry. Keep it to ~1 hour so you can get to Changdeokgung in time for the 11:30am garden slot.", "tags": [{"t": "Entry 3,000 won", "c": "ticket"}, {"t": "Hanbok = free entry", "c": "free"}, {"t": "9am-5pm", "c": "tip"}, {"t": "Keep visit to ~1hr", "c": "warn"}], "map": "https://maps.google.com/?q=Gyeongbokgung+Palace+Seoul"}, {"transport": "15 min walk or short taxi east to Changdeokgung"}, {"time": "11am", "name": "Changdeokgung + Secret Garden", "type": "UNESCO Palace · Book Garden Slot Ahead", "desc": "Buy the palace ticket at the gate (3,000 won), then use your pre-booked Secret Garden slot for the 11:30am English tour. The garden is a forested royal retreat with pavilions and ponds — one of the most beautiful places in Seoul. Book the garden slot at royal.cha.go.kr before your trip. Tours at 10am, 11:30am, 2pm, 3:30pm in English.", "tags": [{"t": "Palace 3,000 won at gate", "c": "ticket"}, {"t": "Garden 5,000 won — book online", "c": "ticket"}, {"t": "Closed Mondays", "c": "warn"}, {"t": "Last English tour 3:30pm", "c": "warn"}, {"t": "Book at royal.cha.go.kr", "c": "warn"}], "map": "https://maps.google.com/?q=Changdeokgung+Palace+Seoul"}, {"transport": "5 min walk south"}, {"time": "1:30pm", "name": "Bukchon Hanok Village", "type": "Traditional Neighborhood", "desc": "Go early afternoon before the last tourist rush. Best shot: top of Bukchon-ro 11-gil for the iconic rooftop view. People live here — keep noise down.", "tags": [{"t": "Free", "c": "free"}, {"t": "Quieter after 1pm", "c": "tip"}], "map": "https://maps.google.com/?q=Bukchon+Hanok+Village+Seoul"}, {"transport": "5 min walk south to Insadong"}, {"time": "2:30pm", "name": "Insadong + Ikseon-dong", "type": "Cultural Streets · Afternoon Wander", "desc": "Traditional street followed by the hip hanok alley with indie cafes and boutiques. Plenty of time to browse slowly.", "tags": [{"t": "Free to explore", "c": "free"}, {"t": "Shops 10am-9pm", "c": "tip"}], "map": "https://maps.google.com/?q=Ikseon-dong+Seoul"}], "eats": [{"meal": "Lunch", "name": "Kkangtong Mandu", "type": "Dumpling Soup · Near Bukchon", "desc": "A locally beloved dumpling restaurant steps from Bukchon Hanok Village. The dumpling soup is legendary — thick broth, fat dumplings, incredibly comforting. Lines form but they move fast. Arrive right at 12pm.", "order": "Mandu guk (dumpling soup) — the whole reason to come. Add a pajeon if you want something crispy on the side.", "tags": [{"t": "No reservation — arrive early", "c": "tip"}, {"t": "~10,000-13,000 won", "c": "food"}, {"t": "Near Bukchon", "c": "tip"}], "map": "https://maps.google.com/?q=Kkangtong+Mandu+Seoul+Bukchon"}, {"meal": "Dinner", "name": "Oreno Ramen", "type": "Michelin Bib Gourmand · Chicken Ramen · Insadong branch", "desc": "The best chicken ramen in Seoul by a wide margin. Michelin-recognized. The broth is a creamy chicken paitan — blended to a froth right before serving, nutty and rich. Free refills of noodles and rice. Locals queue for this and it is absolutely worth it.", "order": "Kara Paitan — the spicy version of the creamy chicken broth. That is the one. Add a soft-boiled egg. Ask for extra chili peppers (free). Noodle refills are free.", "tags": [{"t": "Chicken ramen", "c": "food"}, {"t": "Spicy option", "c": "food"}, {"t": "Michelin Bib Gourmand", "c": "tip"}, {"t": "No reservation — queue", "c": "tip"}, {"t": "~11,000 won", "c": "food"}], "map": "https://maps.google.com/?q=Oreno+Ramen+Insadong+Seoul"}], "cafes": [{"time": "Morning coffee · 9am", "name": "Namusairo", "type": "Specialty Coffee · Renovated Hanok · Near Gyeongbokgung", "desc": "A beautifully restored hanok right by the palace — white walls, wood beams, a little attic nook, and genuinely excellent coffee. One of the best spots in the city for coffee inside traditional architecture. Get a window seat or the attic if it is free.", "order": "Flat white or filter coffee. They do a beautiful latte art. Pick up a pastry if they have any. Under 9,000 won.", "map": "https://maps.google.com/?q=Namusairo+cafe+Seoul+Gyeongbokgung"}, {"time": "Afternoon · 3pm", "name": "Cheongsudang Bakery", "type": "Garden Hanok Cafe · Ikseon-dong", "desc": "A stunning nature-themed cafe in Ikseon-dong — you enter over stepping stones with water flowing beneath you, and inside there are streams, fountains and lush greenery everywhere. Completely unique. Named after the Korean word for clear water, the whole design flows around it.", "order": "Any seasonal drink — matcha or ade. The desserts are beautiful but secondary to just sitting inside this space.", "map": "https://maps.google.com/?q=Cheongsudang+Bakery+Ikseon-dong+Seoul"}]}, {"id": 3, "date": "Mar 27", "dow": "Thu", "city": "Seoul", "title": "Seongsu-dong", "subtitle": "Seoul's coolest neighborhood. Converted warehouses, indie Korean fashion, best cafe scene in the city.", "alerts": [{"type": "tip", "text": "Line 2 from City Hall to Seongsu Station (~20 min). Exit 3."}], "bookings": [], "stops": [{"time": "8am", "name": "Cafe Onion Seongsu", "type": "Flagship Cafe · Converted Warehouse", "desc": "Go early before the crowds. Massive brutalist factory space. Order the salt butter croissant.", "tags": [{"t": "Opens 8am", "c": "tip"}, {"t": "Coffee ~7,000 won", "c": "food"}], "map": "https://maps.google.com/?q=Cafe+Onion+Seongsu+Seoul"}, {"time": "10am-2pm", "name": "Seongsu-dong Boutiques", "type": "Korean Streetwear + Pop-ups", "desc": "Ordinary People, Ader Error, Mmlg Studio. Check @seongsu_official on Instagram before going for current pop-up info.", "tags": [{"t": "Most open 11am", "c": "tip"}, {"t": "Korean streetwear", "c": "shop"}], "map": "https://maps.google.com/?q=Seongsu+dong+Seoul"}, {"transport": "Seoul Forest is a 10 min walk — cherry blossoms likely late March"}, {"time": "3pm", "name": "Seoul Forest", "type": "Park · Cherry Blossom Spot", "desc": "One of the best cherry blossom spots in the city in late March / early April. Free and massive.", "tags": [{"t": "Free", "c": "free"}, {"t": "Cherry blossoms likely", "c": "tip"}], "map": "https://maps.google.com/?q=Seoul+Forest+Park"}, {"transport": "Line 2: Seongsu to Euljiro 3-ga (~10 min)"}, {"time": "6-8pm", "name": "Dongdaemun Design Plaza", "type": "Architecture · Zaha Hadid · Evening", "desc": "Stunning after dark when lit up. Walk the exterior and the LED rose garden — all free.", "tags": [{"t": "Exterior FREE", "c": "free"}, {"t": "24hrs exterior", "c": "tip"}, {"t": "Exhibitions ~10,000 won", "c": "ticket"}], "map": "https://maps.google.com/?q=Dongdaemun+Design+Plaza+Seoul"}], "eats": [{"meal": "Lunch", "name": "Baeknyeon Tojong Samgyetang", "type": "Chicken Ginseng Soup · Bukchon Area", "desc": "A beloved, slightly less touristy alternative to Tosokchon. Same concept — whole chicken in ginseng broth — but this one near Bukchon has a devoted local following and slightly richer broth. The spicy garlic cloves served as a side dish are addictive.", "order": "Samgyetang (whole ginseng chicken soup). Season with the salt. Order the spicy garlic clove side dish. That is all you need.", "tags": [{"t": "Chicken", "c": "food"}, {"t": "~17,000 won", "c": "food"}, {"t": "No reservation", "c": "tip"}, {"t": "Near Bukchon", "c": "tip"}], "map": "https://maps.google.com/?q=Baeknyeon+Tojong+Samgyetang+Seoul"}, {"meal": "Dinner", "name": "Jangin Dakgalbi — Myeongdong branch", "type": "Spicy Stir-Fried Chicken · Near Your Hotel", "desc": "Dakgalbi is one of the most beloved Korean chicken dishes — marinated in gochujang, stir-fried tableside on a hot iron plate with rice cakes and vegetables, then finished with melted mozzarella. Jangin is the go-to spot locals cite every time. Walk back to the hotel smelling like dinner — bring a fresh shirt.", "order": "Dakgalbi with cheese — standard order. Add rice cakes and glass noodles if you want more. At the end, the staff will fry fried rice in the leftover sauce right in the pan. Do not skip this.", "tags": [{"t": "Spicy chicken", "c": "food"}, {"t": "Cheese pull moment", "c": "tip"}, {"t": "~14,000-18,000 won", "c": "food"}, {"t": "Near Myeongdong hotel", "c": "tip"}, {"t": "No reservation", "c": "tip"}], "map": "https://maps.google.com/?q=Jangin+Dakgalbi+Myeongdong+Seoul"}], "cafes": [{"time": "Morning · 8am", "name": "Cafe Onion Seongsu", "type": "Flagship Brutalist Warehouse Cafe · Already in Schedule", "desc": "Already on your schedule as the first stop of the day — this IS your morning coffee. Arrive at 8am before the queues build.", "order": "Iced Americano or latte + salt butter croissant. The croissant here is exceptional.", "map": "https://maps.google.com/?q=Cafe+Onion+Seongsu+Seoul"}, {"time": "Afternoon · 2pm", "name": "Lowide", "type": "Minimal Scandinavian Cafe · Seongsu", "desc": "Scandinavian-minimal aesthetic, super popular with Seongsu locals, lots of natural light. Cheesecake, caramel custard cream tart, salt bread. The kind of place you settle into for an hour with good coffee and watch the neighborhood go by.", "order": "Filter coffee or flat white + caramel custard cream tart. One of the better pastry-coffee pairings in Seongsu.", "map": "https://maps.google.com/?q=Lowide+cafe+Seongsu+Seoul"}]}, {"id": 4, "date": "Mar 28", "dow": "Fri", "city": "Seoul", "title": "Day Trip — Jeonju", "subtitle": "2 hrs south by KTX. 700+ hanok houses, the original bibimbap, and great street food.", "alerts": [{"type": "warn", "text": "Book KTX before your trip at korail.go.kr or the Korail app. Fills up on Fridays. Aim for the 7:30-8am train from Seoul Station."}, {"type": "tip", "text": "Taxi from Jeonju station to Hanok Village ~5,000 won (15 min)."}], "bookings": [{"text": "KTX Seoul to Jeonju (~8am, ~28,000 won each way)", "link": "https://www.letskorail.com", "label": "Book"}, {"text": "KTX Jeonju to Seoul (return ~5:30-6pm)", "link": "https://www.letskorail.com", "label": "Book"}], "stops": [{"time": "7:30am", "name": "Seoul Station — Depart KTX", "type": "High Speed Train · ~2hrs", "desc": "Arrive Jeonju ~10am. Buy snacks in the station convenience store for the ride.", "tags": [{"t": "~28,000 won each way", "c": "ticket"}, {"t": "Book in advance", "c": "warn"}], "map": "https://maps.google.com/?q=Seoul+Station"}, {"time": "10am-5pm", "name": "Jeonju Hanok Village", "type": "700+ Hanok Houses · All Day", "desc": "Over 700 traditional houses. Rent a hanbok (~15,000 won/hr, hair styling included), walk the Gyodong alleys, visit Pungnamnu Gate. The most intact traditional village in Korea.", "tags": [{"t": "Free to walk", "c": "free"}, {"t": "Hanbok ~15,000 won", "c": "ticket"}, {"t": "Open 24hrs", "c": "tip"}], "map": "https://maps.google.com/?q=Jeonju+Hanok+Village"}, {"time": "5:30pm", "name": "Jeonju Station — KTX Return", "type": "Back to Seoul · ~2hrs", "desc": "Arrive Seoul ~7:30pm. Easy evening back at the hotel.", "tags": [{"t": "~28,000 won", "c": "ticket"}], "map": "https://maps.google.com/?q=Jeonju+Station"}], "eats": [{"meal": "Lunch", "name": "Jeonju Bibimbap", "type": "The Original Bibimbap · Hanok Village Restaurants", "desc": "Jeonju is the birthplace of bibimbap — and it genuinely tastes different here. More vegetables, richer sesame oil, more banchan, and the dolsot (stone pot) version gives you crispy rice on the bottom. Just walk into any restaurant on the main village streets with grandma-style staff out front.", "order": "Dolsot bibimbap (stone pot). Mix everything together with the gochujang paste. The crispy rice at the bottom is the best part. Add extra gochujang if you want more heat.", "tags": [{"t": "~10,000-14,000 won", "c": "food"}, {"t": "No reservation", "c": "tip"}, {"t": "The original", "c": "tip"}], "map": "https://maps.google.com/?q=Jeonju+Hanok+Village+bibimbap"}, {"meal": "Snacks", "name": "Jeonju Street Food Stalls", "type": "Village Snack Stalls", "desc": "Jeonju is famous for its street food — do not leave without trying these.", "order": "Choco pie (the original), hotteok with brown sugar, and the gamja hotdog (potato-coated corn dog). All 1,000-4,000 won.", "tags": [{"t": "1,000-4,000 won", "c": "food"}, {"t": "Walk and eat", "c": "tip"}], "map": "https://maps.google.com/?q=Jeonju+Hanok+Village+street+food"}], "cafes": [{"time": "Morning · on arrival", "name": "Hanok Village Tea House", "type": "Traditional Tea Cafe · Jeonju Village", "desc": "Walk into any of the small traditional tea houses inside the Hanok Village — there are dozens tucked into the alleys. Look for ones pouring sikhye (sweet rice tea) or omija (five-flavor berry tea) from clay pots. Far more local and authentic than grabbing a chain coffee.", "order": "Omija cha (five-flavor tea) or yuzu tea, served in ceramic cups. Around 5,000-8,000 won. Pair with a traditional rice cake if they have one.", "map": "https://maps.google.com/?q=Jeonju+Hanok+Village+tea+house"}, {"time": "Afternoon · 2:30pm", "name": "Any hanok cafe on the main alley", "type": "Coffee + Bingsu · Jeonju Village", "desc": "By afternoon the village fills with cafes doing injeolmi bingsu (shaved ice with toasted rice flour) and sweet grain lattes. Walk until something catches your eye — the standard is remarkably high even in tourist-facing spots here.", "order": "Injeolmi bingsu or barley latte (boricha latte). Sweet, filling, very Korean.", "map": "https://maps.google.com/?q=Jeonju+Hanok+Village+cafe"}]}, {"id": 5, "date": "Mar 29", "dow": "Sat", "city": "Seoul", "title": "Hongdae + Yeonnam", "subtitle": "West Seoul's creative cluster. Boutiques, indie cafes, a linear park, and great chicken.", "alerts": [{"type": "tip", "text": "Line 2 from City Hall to Hongdae/Hapjeong (~20 min). Start in Yeonnam early — Saturday gets busy fast."}], "bookings": [], "stops": [{"time": "9am", "name": "Yeonnam-dong Brunch", "type": "Quiet Artsy Neighborhood", "desc": "Tree-lined streets, very local feeling. Great cafe-hopping before the crowds arrive.", "tags": [{"t": "Most cafes open 10am", "c": "tip"}], "map": "https://maps.google.com/?q=Yeonnam-dong+Seoul"}, {"transport": "5 min walk to park"}, {"time": "10:30am", "name": "Gyeongui Line Forest Park", "type": "Linear Park · Old Railway", "desc": "6km park on a former railway through Hongdae and Yeonnam. Cafes and shops line both sides. Cherry blossoms possible.", "tags": [{"t": "Free · 24hrs", "c": "free"}, {"t": "Cherry blossoms likely", "c": "tip"}], "map": "https://maps.google.com/?q=Gyeongui+Line+Forest+Park+Seoul"}, {"time": "12pm", "name": "Shinleedoga Cafe", "type": "Iconic Hanok Cafe · Open Fire Pit", "desc": "Restored hanok with a fire pit where you roast marshmallows. One of Seoul most atmospheric cafes. The corn latte is famous.", "tags": [{"t": "Opens 11am", "c": "tip"}, {"t": "~8,000 won", "c": "food"}], "map": "https://maps.google.com/?q=Shinleedoga+Cafe+Seoul"}, {"time": "1-5pm", "name": "Hongdae Boutique Shopping", "type": "Korean Streetwear + Vintage", "desc": "Jandari-ro alley for indie Korean labels. Covernat, Post Archive Faction, and rotating concept stores. Underground arcade near Exit 9.", "tags": [{"t": "Open 12pm-10pm", "c": "tip"}, {"t": "Some cash only", "c": "warn"}, {"t": "Korean streetwear", "c": "shop"}], "map": "https://maps.google.com/?q=Hongdae+Jandari-ro+Seoul"}, {"time": "Evening", "name": "Hongdae Nightlife (optional)", "type": "Bars · Live Music · Street Performance", "desc": "Best live music and bar scene in Seoul. Plenty of rooftop bars and izakayas.", "tags": [{"t": "Bars from 8pm", "c": "tip"}], "map": "https://maps.google.com/?q=Hongdae+Seoul+nightlife"}], "eats": [{"meal": "Lunch", "name": "Ondare Jjimdalk", "type": "Braised Soy Chicken · Hongdae", "desc": "Jjimdalk is a beloved Korean dish — chicken, glass noodles, and vegetables braised in a deep savory-sweet soy sauce. This Hongdae branch was visited by Conan O'Brien and has been a local staple since. Cool brick wall vibe. Great for a solo sit-down lunch.", "order": "Jjimdalk S size (feeds 1-2 people easily). Get the spicy version for heat. The glass noodles soak up all the sauce — eat them last.", "tags": [{"t": "Chicken + noodles", "c": "food"}, {"t": "Spicy option", "c": "food"}, {"t": "~16,000-20,000 won", "c": "food"}, {"t": "No reservation", "c": "tip"}], "map": "https://maps.google.com/?q=Ondare+Jjimdalk+Hongdae+Seoul"}, {"meal": "Dinner", "name": "Menten Ramen", "type": "Michelin Bib Gourmand · Tantanmen · Myeongdong", "desc": "Tiny 10-seat ramen spot in Myeongdong, right near your hotel. Michelin Bib Gourmand. Only two things on the menu: tantanmen (spicy peanut broth) and shoyu ramen. The tantanmen is exceptional — rich, spicy, creamy peanut base. Order at the kiosk. Perfect end to a day on your feet.", "order": "Tantanmen — spicy peanut broth, the must-order. Add a soft-boiled egg. Pay at the kiosk before you sit down.", "tags": [{"t": "Spicy ramen", "c": "food"}, {"t": "Michelin Bib Gourmand", "c": "tip"}, {"t": "~12,000-15,000 won", "c": "food"}, {"t": "Near Myeongdong hotel", "c": "tip"}, {"t": "No reservation — tiny space", "c": "tip"}], "map": "https://maps.google.com/?q=Menten+Ramen+Myeongdong+Seoul"}], "cafes": [{"time": "Morning · 9am", "name": "Vimutti Coffee", "type": "Rustic Countryside Kitchen Cafe · Yeonnam-dong", "desc": "Tiny, cozy cafe in Yeonnam that feels like someone's farmhouse kitchen — warm wood, old crockery, mismatched chairs. Very local, not on the usual tourist trail. Famous for their cinnamon roll. The kind of place that makes you want to stay all morning.", "order": "Cinnamon roll (the whole reason to come) + Americano or flat white. Under 12,000 won total.", "map": "https://maps.google.com/?q=Vimutti+Coffee+Yeonnam+Seoul"}, {"time": "Afternoon · 2pm", "name": "Perception Coffee", "type": "Award-Winning Specialty Cafe · Hapjeong", "desc": "Award-winning specialty coffee shop near Hapjeong — famous for its stunning interior with a ceiling of flowing wooden waves. Serious coffee, exceptional latte, very cool space. A must for anyone who takes their coffee seriously.", "order": "Single origin filter or their signature latte. The coffee is the draw here — do not overthink it.", "map": "https://maps.google.com/?q=Perception+Coffee+Hapjeong+Seoul"}]}, {"id": 6, "date": "Mar 30", "dow": "Sun", "city": "Seoul to Busan", "title": "Garosu-gil — KTX to Busan", "subtitle": "Half morning in Seoul's most elegant street, then the fast train south.", "alerts": [{"type": "warn", "text": "Book KTX Seoul to Busan in advance. Sunday trains sell out. Aim for 1-2pm departure."}, {"type": "tip", "text": "Check out of L'Escape. Store luggage with concierge, collect before Seoul Station."}], "bookings": [{"text": "KTX Seoul to Busan (~59,800 won, ~2h40min)", "link": "https://www.letskorail.com", "label": "Book"}], "stops": [{"time": "9am-12pm", "name": "Garosu-gil", "type": "Upscale Boutique Street · Sinsa-dong", "desc": "Ginkgo-lined street with Korean designer shops and beautiful cafes. More curated than Hongdae. Walk both sides.", "tags": [{"t": "Shops open ~11am", "c": "tip"}, {"t": "Korean designer labels", "c": "shop"}, {"t": "Line 3 to Sinsa Stn Exit 8", "c": "tip"}], "map": "https://maps.google.com/?q=Garosu-gil+Seoul"}, {"transport": "Subway: Line 3 Sinsa to Line 1/4 for Seoul Station (~35 min)"}, {"time": "1-2pm", "name": "Seoul Station — KTX to Busan", "type": "Depart · ~2h40min", "desc": "Arrive Busan Station ~3:30-4:30pm.", "tags": [{"t": "~59,800 won", "c": "ticket"}, {"t": "Book in advance", "c": "warn"}], "map": "https://maps.google.com/?q=Seoul+Station"}, {"time": "Evening", "name": "Arrive Busan — Easy Night", "type": "Check In · Rest", "desc": "Check in, walk around the station area, get oriented. Light first night in Busan.", "tags": [{"t": "Easy evening", "c": "tip"}], "map": "https://maps.google.com/?q=Busan+Station"}], "eats": [{"meal": "Brunch", "name": "Garosu-gil Cafe Stop", "type": "Any Cafe on the Strip", "desc": "Most third-wave coffee spots along Garosu-gil open by 10am. Great cafes with egg sandwiches and pastries before shopping.", "order": "Egg sandwich or croissant + iced Americano. Quick and easy before you browse.", "tags": [{"t": "6,000-12,000 won", "c": "food"}, {"t": "Opens 10am", "c": "tip"}], "map": "https://maps.google.com/?q=Garosu-gil+cafe+Sinsa+Seoul"}, {"meal": "Dinner", "name": "Gukbap near Busan Station", "type": "Rice Soup · Busan Welcome Meal", "desc": "Busan comfort food is gukbap — rice soup. Near Busan Station there are dozens of small spots open late. Walk out of the station and look for bright-lit local places with plastic stools. The broth will be milky, rich, and deeply satisfying after a long travel day.", "order": "Try dak-gukbap (chicken rice soup) or the tofu version. All come with kimchi and rice.", "tags": [{"t": "~8,000-12,000 won", "c": "food"}, {"t": "No reservation", "c": "tip"}, {"t": "Walk-in local spots", "c": "tip"}], "map": "https://maps.google.com/?q=gukbap+restaurant+Busan+Station"}], "cafes": [{"time": "Morning · 9:30am", "name": "Garosu-gil cafe stop", "type": "Tree-lined Cafe Street · Sinsa-dong", "desc": "The whole street has excellent cafes — just walk in anywhere that catches your eye. The quality floor here is very high. Look for places with outdoor seating under the ginkgo trees for a peaceful Sunday morning.", "order": "Iced Americano + egg sandwich or croissant. Simple, easy, beautiful street to sit on.", "map": "https://maps.google.com/?q=Garosu-gil+cafe+Sinsa+Seoul"}]}, {"id": 7, "date": "Mar 31", "dow": "Mon", "city": "Busan", "title": "Gamcheon + Jagalchi + Nampo", "subtitle": "Colorful hillside village, Korea's biggest fish market, the gritty old port.", "alerts": [{"type": "tip", "text": "Gamcheon: Bus 2, 2-2, or 13 — or taxi (~10,000 won). Not on the subway."}, {"type": "warn", "text": "Go to Gamcheon at 9am before tour groups arrive. 2 hours is plenty."}], "bookings": [], "stops": [{"time": "9am", "name": "Gamcheon Culture Village", "type": "Colorful Hillside Village", "desc": "Buy the 2,000 won stamp map at the entrance — it leads you to the best photo spots. Wear comfortable shoes.", "tags": [{"t": "Entry 2,000 won", "c": "ticket"}, {"t": "9am-6pm", "c": "tip"}, {"t": "Go early", "c": "warn"}], "map": "https://maps.google.com/?q=Gamcheon+Culture+Village+Busan"}, {"transport": "Bus or taxi to Jagalchi (~15 min)"}, {"time": "11:30am", "name": "Jagalchi Fish Market", "type": "Korea's Biggest Seafood Market", "desc": "Pick live seafood from vendors on the ground floor, pay a small cooking fee (~5,000 won), and eat it cooked upstairs. One of the most memorable experiences of the whole trip.", "tags": [{"t": "Open 9am-9pm", "c": "tip"}, {"t": "Bring translation app", "c": "tip"}, {"t": "30,000-80,000 won for seafood", "c": "food"}], "map": "https://maps.google.com/?q=Jagalchi+Fish+Market+Busan"}, {"transport": "5 min walk"}, {"time": "2:30pm", "name": "BIFF Square + Nampo-dong", "type": "Street Food + Local Shopping", "desc": "Named after the Busan International Film Festival. Great street food and local energy.", "tags": [{"t": "Street food 2,000-5,000 won", "c": "food"}, {"t": "Open 24hrs", "c": "tip"}], "map": "https://maps.google.com/?q=BIFF+Square+Busan"}, {"transport": "5 min walk"}, {"time": "4pm", "name": "Bosu Book Street", "type": "Atmospheric Side Street · Korean War Legacy", "desc": "Narrow alley lined with second-hand booksellers dating to the Korean War era. More about atmosphere than buying.", "tags": [{"t": "Free to browse", "c": "free"}, {"t": "10am-8:30pm", "c": "tip"}], "map": "https://maps.google.com/?q=Bosu+Book+Street+Busan"}], "eats": [{"meal": "Lunch", "name": "Jagalchi Market Upstairs", "type": "Live Seafood · Cooked to Order", "desc": "This IS your lunch today. Buy from vendors on the ground floor (point and gesture — they understand), pay the cooking fee, and head upstairs. King crab, grilled clams, sea urchin, whole fish. This is what Busan is about — seafood so fresh it was swimming an hour ago.", "order": "Point to whatever looks good. Sea urchin and grilled clams are unmissable. Wash it down with cold Cass beer. Use Google Translate camera for the menu upstairs.", "tags": [{"t": "Seafood", "c": "food"}, {"t": "No reservation", "c": "tip"}, {"t": "40,000-80,000 won", "c": "food"}, {"t": "Use Google Translate", "c": "tip"}], "map": "https://maps.google.com/?q=Jagalchi+Fish+Market+Busan"}, {"meal": "Dinner", "name": "Dakbokkeumtang near Nampo", "type": "Spicy Braised Chicken Stew · Local Busan Style", "desc": "Dakbokkeumtang is a spicy braised chicken stew with potatoes and vegetables in gochujang sauce — one of the most deeply satisfying Korean chicken dishes and a Busan specialty. Walk around the Nampo area and look for small local spots with this on the sign. These hole-in-the-wall places are where locals eat after a day at the market.", "order": "One pot of dakbokkeumtang. Add rice. The sauce is for soaking your rice into — do not waste a drop. Ask for extra spicy (deo maepge) if you want heat.", "tags": [{"t": "Spicy chicken stew", "c": "food"}, {"t": "~12,000-16,000 won", "c": "food"}, {"t": "No reservation", "c": "tip"}, {"t": "Local neighborhood spot", "c": "tip"}], "map": "https://maps.google.com/?q=dakbokkeumtang+Nampo+Busan"}], "cafes": [{"time": "Morning · inside Gamcheon", "name": "Avant Garde Cafe", "type": "Hidden View Cafe · Inside Gamcheon Village", "desc": "A hidden cafe inside Gamcheon Culture Village with the best view in the whole village — surrounded by colorful houses cascading down on all sides. Easy to miss, worth finding. Sit outside if you can.", "order": "Iced Americano or latte. The view is the main event here. Around 6,000-8,000 won.", "map": "https://maps.google.com/?q=Avant+Garde+cafe+Gamcheon+Busan"}, {"time": "Afternoon · 4pm", "name": "WERK Coffee Roasters", "type": "Specialty Coffee Institution · Jeonpo area", "desc": "One of the most respected specialty coffee roasters in Busan, established 2017. Their Jeonpo branch has church pews, slit windows, minimalist lounge music — like a chapel for coffee people. Serious beans, serious craft.", "order": "Filter coffee (their house roast) or an espresso-based drink. They take their coffee very seriously — just tell them what you usually like.", "map": "https://maps.google.com/?q=WERK+coffee+Jeonpo+Busan"}]}, {"id": 8, "date": "Apr 1", "dow": "Tue", "city": "Busan", "title": "Haedong Temple + Beaches", "subtitle": "Coastal Buddhist temple in the morning, two beaches in the afternoon.", "alerts": [{"type": "tip", "text": "Haedong Yonggungsa: Bus 181 from Haeundae or taxi (~15,000 won). Not on the subway — allow 40 min travel."}, {"type": "tip", "text": "Arrive at Gwangalli around 5pm — Gwangan Bridge lights up beautifully at dusk."}], "bookings": [], "stops": [{"time": "8:30am", "name": "Haedong Yonggungsa Temple", "type": "Coastal Buddhist Temple", "desc": "One of the only seaside Buddhist temples in Korea — built directly into the rocky coastline. Stunning in any weather. Allow 1-1.5 hrs.", "tags": [{"t": "Free entry", "c": "free"}, {"t": "4am-8pm daily", "c": "tip"}, {"t": "Early = no crowds", "c": "tip"}], "map": "https://maps.google.com/?q=Haedong+Yonggungsa+Temple+Busan"}, {"transport": "Bus or taxi to Haeundae Beach (~30 min)"}, {"time": "11am", "name": "Haeundae Beach", "type": "Busan's Famous Beach", "desc": "Walk the 1.5km white sand stretch. In early April it is uncrowded — locals use it as a morning promenade. Great cafes on the beachfront.", "tags": [{"t": "Free", "c": "free"}, {"t": "Cafes from 8am", "c": "tip"}], "map": "https://maps.google.com/?q=Haeundae+Beach+Busan"}, {"transport": "Line 2: Haeundae to Gwangan (~10 min, 1,500 won)"}, {"time": "4:30-8pm", "name": "Gwangalli Beach + Gwangan Bridge", "type": "Sunset + Evening", "desc": "More local than Haeundae. Wide pedestrian strip lined with restaurants. Bridge lights up at dusk — find a cafe table facing the water.", "tags": [{"t": "Free", "c": "free"}, {"t": "Bridge lit at sunset", "c": "tip"}, {"t": "Great restaurants on strip", "c": "tip"}], "map": "https://maps.google.com/?q=Gwangalli+Beach+Busan"}], "eats": [{"meal": "Lunch", "name": "Gimbap and Tteokbokki near Haeundae", "type": "Local Snack Stalls · Haeundae Market Area", "desc": "Near Haeundae market (5 min walk inland from the beach), there are rows of local snack stalls. Perfect light lunch before a beach afternoon.", "order": "Gimbap (seaweed rice rolls with egg or tuna), tteokbokki (spicy rice cakes). Both 3,000-5,000 won.", "tags": [{"t": "3,000-6,000 won", "c": "food"}, {"t": "Haeundae market area", "c": "tip"}], "map": "https://maps.google.com/?q=Haeundae+Market+Busan"}, {"meal": "Dinner", "name": "Millak Raw Fish Town", "type": "Seafood · Gwangalli Bridge Views", "desc": "A 10-story building at the north end of Gwangalli Beach. Ground floor is a fresh market, upper floors are ~300 restaurants, many with direct bridge views. Buy your seafood downstairs, get it cooked upstairs at your table. Best way to spend a Gwangalli sunset.", "order": "Sashimi platter, grilled clams, haemul pajeon (seafood pancake — the Busan version is thicker and better than Seoul's). Order with cold beer and watch the bridge lights turn on.", "tags": [{"t": "Seafood", "c": "food"}, {"t": "Bridge views", "c": "tip"}, {"t": "No reservation", "c": "tip"}, {"t": "30,000-60,000 won", "c": "food"}], "map": "https://maps.google.com/?q=Millak+Raw+Fish+Town+Gwangalli+Busan"}], "cafes": [{"time": "Morning · after temple", "name": "Momo Coffee Haeundae", "type": "Specialty Coffee · Near Haeundae Beach", "desc": "Opens at 7am — one of the most beloved specialty coffee spots in Busan with a devoted local following. Clean, calm interior, excellent beans. Perfect stop right after the temple before the beach walk.", "order": "Flat white or filter coffee. One of the best cups of coffee in Busan. Under 7,000 won.", "map": "https://maps.google.com/?q=Momos+Coffee+Haeundae+Busan"}, {"time": "Sunset · Gwangalli", "name": "Casa Busano", "type": "European-Style Cafe · Gwangalli Beach", "desc": "European-inspired cafe along the Gwangalli strip — popular at all hours but particularly beautiful as the bridge starts to light up at dusk. Lovely pastries, outdoor terrace facing the water.", "order": "Iced latte or cold brew + whatever pastry looks good. Sit outside facing the bridge. Perfect Busan sunset moment.", "map": "https://maps.google.com/?q=Casa+Busano+Gwangalli+Busan"}]}, {"id": 9, "date": "Apr 2", "dow": "Wed", "city": "Busan", "title": "Slow Morning + Departure", "subtitle": "Last morning in Busan. One great local bowl, then Gimhae Airport.", "alerts": [{"type": "tip", "text": "Gimhae Airport (PUS): Allow 1.5 hrs before flight. Airport Limousine Bus from Seomyeon (~40 min, 7,000 won) or subway Line 2 to Sasang then Line 3 to Airport (~50 min)."}], "bookings": [], "stops": [{"time": "Morning", "name": "Seomyeon District", "type": "Busan Downtown · Last Look", "desc": "Shops, Korean cosmetics, underground arcade. Relaxed morning wander before the airport.", "tags": [{"t": "Shops from 10am", "c": "tip"}, {"t": "K-beauty + clothing", "c": "shop"}], "map": "https://maps.google.com/?q=Seomyeon+Busan"}, {"time": "Afternoon", "name": "Gimhae International Airport", "type": "Departure · PUS", "desc": "Duty-free is well stocked for Korean snacks and K-beauty. Give yourself time.", "tags": [{"t": "Allow 1.5 hrs before flight", "c": "warn"}, {"t": "Duty-free inside", "c": "shop"}], "map": "https://maps.google.com/?q=Gimhae+International+Airport+Busan"}], "eats": [{"meal": "Last meal", "name": "Milmyeon — any local spot in Seomyeon", "type": "Busan Cold Noodles · Cannot Get This Outside Busan", "desc": "Milmyeon is Busan cold wheat noodle dish, born from Korean War refugees. It is the city most local food — you genuinely cannot get an authentic bowl outside Busan. Look for any restaurant with the milmyeon sign near Seomyeon station.", "order": "One bowl mul milmyeon (cold broth, mild) + one bowl bibim milmyeon (spicy mixed version) to try both. Add a soft-boiled egg. Pour a splash of vinegar into the cold broth version for brightness. Slurp loudly — it is correct etiquette.", "tags": [{"t": "Spicy version available", "c": "food"}, {"t": "Busan-only dish", "c": "tip"}, {"t": "7,000-10,000 won", "c": "food"}, {"t": "No reservation", "c": "tip"}], "map": "https://maps.google.com/?q=milmyeon+Seomyeon+Busan"}, {"meal": "Coffee", "name": "Any cafe in Seomyeon", "type": "Quick Coffee Before Airport", "desc": "Grab a final iced Americano — coffee is exceptional and cheap across Korea.", "order": "Iced Americano (아이스 아메리카노). Korea national drink. 3,500-5,000 won everywhere.", "tags": [{"t": "3,500-5,000 won", "c": "food"}], "map": "https://maps.google.com/?q=cafe+Seomyeon+Busan"}], "cafes": [{"time": "Morning · before airport", "name": "Blackup Coffee Seomyeon", "type": "Popular Local Coffee Brand · Seomyeon", "desc": "Busan-born coffee chain that has a cult following among locals — genuinely better than it has any right to be for the price. The Seomyeon branch is easy and central. Perfect final coffee before the airport run.", "order": "Iced Americano. Korea farewell drink. 3,500-5,000 won.", "map": "https://maps.google.com/?q=Blackup+Coffee+Seomyeon+Busan"}]}];
+
+let currentDay = 1;
+let cityFilter = 'all';
+
+function getCityClass(day) {
+  const c = day.city.toLowerCase();
+  if (c.includes('busan') && c.includes('seoul')) return 'transit';
+  if (c.includes('busan')) return 'busan';
+  return 'seoul';
+}
+
+function buildNav() {
+  const scroll = document.getElementById('dayScroll');
+  const bottom = document.getElementById('bottomNav');
+  scroll.innerHTML = '';
+  bottom.innerHTML = '';
+
+  DAYS.forEach(day => {
+    const cls = getCityClass(day);
+    const isVisible = cityFilter === 'all' || cls === cityFilter || cls === 'transit';
+
+    // Top scroll pills
+    const pill = document.createElement('div');
+    pill.className = `day-pill ${cls} ${day.id === currentDay ? 'active' : ''} ${!isVisible ? 'hidden' : ''}`;
+    pill.style.display = isVisible ? '' : 'none';
+    pill.innerHTML = `<div class="pill-num">${day.id}</div><div class="pill-dow">${day.dow}</div><div class="pill-city-dot"></div>`;
+    pill.onclick = () => selectDay(day.id);
+    scroll.appendChild(pill);
+
+    // Bottom nav
+    const dot = document.createElement('div');
+    dot.className = `nav-dot ${cls}-city ${day.id === currentDay ? 'active' : ''}`;
+    dot.style.display = isVisible ? '' : 'none';
+    dot.textContent = day.id;
+    dot.onclick = () => selectDay(day.id);
+    bottom.appendChild(dot);
+  });
+}
+
+function selectDay(id) {
+  currentDay = id;
+  buildNav();
+  renderDay();
+  window.scrollTo({top: 0, behavior: 'instant'});
+}
+
+function filterCity(city, btn) {
+  cityFilter = city;
+  document.querySelectorAll('.city-btn').forEach(b => b.className = 'city-btn');
+  btn.className = `city-btn active-${city}`;
+  // jump to first visible day
+  const first = DAYS.find(d => {
+    const cls = getCityClass(d);
+    return city === 'all' || cls === city || cls === 'transit';
+  });
+  if (first) currentDay = first.id;
+  buildNav();
+  renderDay();
+  window.scrollTo({top: 0, behavior: 'instant'});
+}
+
+function tagHtml(tags) {
+  if (!tags || !tags.length) return '';
+  return '<div class="tags">' + tags.map(t => `<span class="tag ${t.c}">${t.t}</span>`).join('') + '</div>';
+}
+
+function mapLink(url) {
+  if (!url) return '';
+  return `<a href="${url}" class="map-link" target="_blank">📍 Open in Maps</a>`;
+}
+
+function renderDay() {
+  const day = DAYS.find(d => d.id === currentDay);
+  if (!day) return;
+  const cls = getCityClass(day);
+
+  let html = `<div class="day-view">`;
+
+  // Day header
+  html += `<div class="day-header">
+    <div class="day-number-row">
+      <span class="day-badge ${cls}">Day ${day.id} · ${day.date}</span>
+      <span class="day-meta">${day.city}</span>
+    </div>
+    <div class="day-title">${day.title}</div>
+    <div class="day-subtitle">${day.subtitle}</div>
+  </div>`;
+
+  // Alerts
+  if (day.alerts && day.alerts.length) {
+    day.alerts.forEach(a => {
+      const icon = a.type === 'warn' ? '⚠️' : '💡';
+      html += `<div class="alert ${a.type}"><span class="alert-icon">${icon}</span><span>${a.text}</span></div>`;
+    });
+  }
+
+  // Bookings
+  if (day.bookings && day.bookings.length) {
+    html += `<div class="bookings-section">
+      <div class="bookings-title">📌 Book Before You Go</div>`;
+    day.bookings.forEach(b => {
+      html += `<a href="${b.link}" class="booking-card" target="_blank">
+        <span class="booking-text">${b.text}</span>
+        <span class="booking-btn">${b.label} →</span>
+      </a>`;
+    });
+    html += `</div>`;
+  }
+
+  // Schedule
+  html += `<div class="section-label">Schedule</div>`;
+  day.stops.forEach(stop => {
+    if (stop.transport) {
+      html += `<div class="transport">
+        <div class="transport-left"><div class="transport-line"></div></div>
+        <div class="transport-text">🚇 ${stop.transport}</div>
+      </div>`;
+    } else {
+      html += `<div class="stop">
+        <div class="stop-left">
+          <div class="stop-time">${stop.time || ''}</div>
+          <div class="stop-line"></div>
+        </div>
+        <div class="stop-dot"></div>
+        <div class="stop-body">
+          <div class="stop-name">${stop.name}</div>
+          <div class="stop-type">${stop.type || ''}</div>
+          <div class="stop-desc">${stop.desc || ''}</div>
+          ${tagHtml(stop.tags)}
+          ${mapLink(stop.map)}
+        </div>
+      </div>`;
+    }
+  });
+
+  // Eat
+  if (day.eats && day.eats.length) {
+    html += `<div class="section-label">🍜 Where to Eat</div>`;
+    day.eats.forEach(eat => {
+      html += `<div class="eat-card">
+        <div class="eat-header">
+          <div style="flex:1">
+            <div class="eat-name">${eat.name}</div>
+            <div class="eat-type">${eat.type}</div>
+          </div>
+          <span class="eat-meal-badge">${eat.meal}</span>
+        </div>
+        <div class="eat-desc">${eat.desc}</div>
+        ${eat.order ? `<div class="order-box"><div class="order-label">What to Order</div><div class="order-text">${eat.order}</div></div>` : ''}
+        ${tagHtml(eat.tags)}
+        ${mapLink(eat.map)}
+      </div>`;
+    });
+  }
+
+  // Cafes
+  if (day.cafes && day.cafes.length) {
+    html += `<div class="section-label">☕ Cafe Stops</div>`;
+    day.cafes.forEach(cafe => {
+      html += `<div class="cafe-card">
+        <div class="cafe-time-badge">${cafe.time || ''}</div>
+        <div class="cafe-name">${cafe.name}</div>
+        <div class="cafe-type">${cafe.type}</div>
+        <div class="cafe-desc">${cafe.desc}</div>
+        ${cafe.order ? `<div class="cafe-order"><div class="order-label">Order</div><div class="order-text">${cafe.order}</div></div>` : ''}
+        ${mapLink(cafe.map)}
+      </div>`;
+    });
+  }
+
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+// Init
+buildNav();
+renderDay();
+</script>
+</body>
+</html>
